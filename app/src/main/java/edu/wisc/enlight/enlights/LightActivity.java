@@ -25,6 +25,10 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.larswerkman.holocolorpicker.ColorPicker;
+import com.larswerkman.holocolorpicker.OpacityBar;
+import com.larswerkman.holocolorpicker.SVBar;
+import com.larswerkman.holocolorpicker.SaturationBar;
+import com.larswerkman.holocolorpicker.ValueBar;
 
 
 public class LightActivity extends Activity {
@@ -46,12 +50,22 @@ public class LightActivity extends Activity {
     private LinearLayout buttonLayout;
     private LayoutInflater inflater;
 
+    private ColorPicker picker;
+    private SVBar svBar;
+    private OpacityBar opacityBar;
+    private SaturationBar saturationBar;
+    private ValueBar valueBar;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_light);
         buttonLayout = (LinearLayout) findViewById(R.id.layout_buttons);
         inflater = (LayoutInflater.from(this));
+        picker = (ColorPicker) findViewById(R.id.picker);
+        svBar = (SVBar) findViewById(R.id.svbar);
+        picker.addSVBar(svBar);
+
         for (int i = 0; i < 6; i++){
             final View view = inflater.inflate(R.layout.button_light, null);
             final ToggleButton button = (ToggleButton) view.findViewById(R.id.button_toggle);
