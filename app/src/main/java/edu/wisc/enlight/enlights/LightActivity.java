@@ -17,6 +17,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
+import com.larswerkman.holocolorpicker.ColorPicker;
 
 
 public class LightActivity extends Activity {
