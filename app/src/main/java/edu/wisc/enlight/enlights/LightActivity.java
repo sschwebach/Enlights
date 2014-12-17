@@ -12,6 +12,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
@@ -21,6 +22,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
@@ -66,21 +68,39 @@ public class LightActivity extends Activity {
         svBar = (SVBar) findViewById(R.id.svbar);
         picker.addSVBar(svBar);
 
+        picker.setShowOldCenterColor(false);
+
+        picker.setOnColorChangedListener(new ColorPicker.OnColorChangedListener() {
+            @Override
+            public void onColorChanged(int i) {
+                //change the color of all active buttons
+                for (int j = 0; j < 6; j++){
+                    View currView = buttonLayout.getChildAt(j);
+                    ToggleButton button = (ToggleButton) currView.findViewById(R.id.button_toggle);
+                    if (button.isChecked()){
+                        button.setBackgroundColor(picker.getColor());
+                    }
+                }
+            }
+        });
+
+
         for (int i = 0; i < 6; i++){
             final View view = inflater.inflate(R.layout.button_light, null);
             final ToggleButton button = (ToggleButton) view.findViewById(R.id.button_toggle);
-            final View borderView = view.findViewById(R.id.view_border);
+            final RelativeLayout borderView = (RelativeLayout) view.findViewById(R.id.button_background);
             view.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
-            view.setOnClickListener(new View.OnClickListener() {
+            button.setBackgroundColor(picker.getColor());
+            button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
                     Log.e("button", "click!");
                     if (button.isChecked()) {
-                        borderView.setVisibility(View.VISIBLE);
-                        button.setBackgroundColor(0xFFFFFF00);
+                        //((ColorDrawable) button.getBackground()).getColor();
+                        button.setBackgroundColor(picker.getColor());
+                        borderView.setBackgroundColor(0xFF000000);
                     }else{
-                        borderView.setVisibility(View.INVISIBLE);
-                        button.setBackgroundColor(0xFF00FF00);
+                        borderView.setBackgroundColor(0x00000000);
                     }
                 }
             });
