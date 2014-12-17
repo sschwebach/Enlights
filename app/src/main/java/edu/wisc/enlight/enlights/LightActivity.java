@@ -1,5 +1,6 @@
 package edu.wisc.enlight.enlights;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -14,9 +15,15 @@ import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.Toast;
+import android.widget.ToggleButton;
+
 import com.larswerkman.holocolorpicker.ColorPicker;
 
 
@@ -36,10 +43,35 @@ public class LightActivity extends Activity {
     private static final int REQUEST_ENABLE_BT = 1;
     private static final long SCAN_PERIOD = 2000;
 
+    private LinearLayout buttonLayout;
+    private LayoutInflater inflater;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_light);
+        buttonLayout = (LinearLayout) findViewById(R.id.layout_buttons);
+        inflater = (LayoutInflater.from(this));
+        for (int i = 0; i < 6; i++){
+            final View view = inflater.inflate(R.layout.button_light, null);
+            final ToggleButton button = (ToggleButton) view.findViewById(R.id.button_toggle);
+            final View borderView = view.findViewById(R.id.view_border);
+            view.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
+            view.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    Log.e("button", "click!");
+                    if (button.isChecked()) {
+                        borderView.setVisibility(View.VISIBLE);
+                        button.setBackgroundColor(0xFFFFFF00);
+                    }else{
+                        borderView.setVisibility(View.INVISIBLE);
+                        button.setBackgroundColor(0xFF00FF00);
+                    }
+                }
+            });
+            buttonLayout.addView(view);
+        }
     }
 
 
@@ -95,7 +127,7 @@ public class LightActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-
+/*
         if (!mBluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(
                     BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -103,6 +135,7 @@ public class LightActivity extends Activity {
         }
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
+        */
     }
 
     private void getGattService(BluetoothGattService gattService) {
