@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattService;
+import android.bluetooth.BluetoothManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -16,11 +17,13 @@ import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -31,6 +34,9 @@ import com.larswerkman.holocolorpicker.OpacityBar;
 import com.larswerkman.holocolorpicker.SVBar;
 import com.larswerkman.holocolorpicker.SaturationBar;
 import com.larswerkman.holocolorpicker.ValueBar;
+
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class LightActivity extends Activity {
@@ -51,6 +57,8 @@ public class LightActivity extends Activity {
 
     private LinearLayout buttonLayout;
     private LayoutInflater inflater;
+    private Button connectButton;
+    private Button sendButton;
 
     private ColorPicker picker;
     private SVBar svBar;
@@ -83,8 +91,59 @@ public class LightActivity extends Activity {
                 }
             }
         });
+        connectButton = (Button) findViewById(R.id.button_connect);
+        connectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (scanFlag == false) {
+                    scanLeDevice();
 
+                    Timer mTimer = new Timer();
+                    mTimer.schedule(new TimerTask() {
 
+                        @Override
+                        public void run() {
+                            if (mDevice != null) {
+                                mDeviceAddress = mDevice.getAddress();
+                                mBluetoothLeService.connect(mDeviceAddress);
+                                scanFlag = true;
+                            } else {
+                                runOnUiThread(new Runnable() {
+                                    public void run() {
+                                        Toast toast = Toast
+                                                .makeText(
+                                                        LightActivity.this,
+                                                        "Couldn't search Ble Shiled device!",
+                                                        Toast.LENGTH_SHORT);
+                                        toast.setGravity(0, 0, Gravity.CENTER);
+                                        toast.show();
+                                    }
+                                });
+                            }
+                        }
+                    }, SCAN_PERIOD);
+                }
+
+                System.out.println(connState);
+                if (connState == false) {
+                    mBluetoothLeService.connect(mDeviceAddress);
+                } else {
+                    mBluetoothLeService.disconnect();
+                    mBluetoothLeService.close();
+                    sendButton.setEnabled(false);
+                }
+            }
+        });
+        sendButton = (Button) findViewById(R.id.button_send);
+        sendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                //TODO get our data
+                byte[] buf = new byte[] { (byte) 0xA0, (byte) 0x00, (byte) 0x00 };
+                characteristicTx.setValue(buf);
+                mBluetoothLeService.writeCharacteristic(characteristicTx);
+            }
+        });
         for (int i = 0; i < 6; i++){
             final View view = inflater.inflate(R.layout.button_light, null);
             final ToggleButton button = (ToggleButton) view.findViewById(R.id.button_toggle);
@@ -106,6 +165,20 @@ public class LightActivity extends Activity {
             });
             buttonLayout.addView(view);
         }
+
+
+        final BluetoothManager mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = mBluetoothManager.getAdapter();
+        if (mBluetoothAdapter == null) {
+            Toast.makeText(this, "Ble not supported", Toast.LENGTH_SHORT)
+                    .show();
+            finish();
+            return;
+        }
+
+        Intent gattServiceIntent = new Intent(LightActivity.this,
+                RBLService.class);
+        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
     }
 
 
@@ -161,7 +234,7 @@ public class LightActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
-/*
+
         if (!mBluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(
                     BluetoothAdapter.ACTION_REQUEST_ENABLE);
@@ -169,7 +242,7 @@ public class LightActivity extends Activity {
         }
 
         registerReceiver(mGattUpdateReceiver, makeGattUpdateIntentFilter());
-        */
+
     }
 
     private void getGattService(BluetoothGattService gattService) {
