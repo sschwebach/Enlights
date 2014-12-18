@@ -1,58 +1,75 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FFFFFF"
     tools:context=".LightActivity">
 
-    <TextView
-        android:id="@+id/text_title"
-        android:layout_centerHorizontal="true"
-        android:textSize="30sp"
-        android:text="@string/title"
-        android:layout_marginBottom="15dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+
 
     <LinearLayout
+        android:layout_margin="5dp"
         android:id="@+id/layout_buttons"
         android:layout_width="match_parent"
         android:layout_height="70dp"
-        android:layout_below="@id/text_title"
         android:orientation="horizontal">
 
-        </LinearLayout>
+    </LinearLayout>
 
     <com.larswerkman.holocolorpicker.ColorPicker
         android:id="@+id/picker"
+        android:layout_margin="5dp"
         android:layout_centerHorizontal="true"
         android:layout_below="@id/layout_buttons"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content" />
 
     <com.larswerkman.holocolorpicker.SVBar
         android:id="@+id/svbar"
+        android:layout_margin="5dp"
         android:layout_below="@id/picker"
         android:layout_centerHorizontal="true"
         android:layout_marginBottom="15dp"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content" />
 
-    <Button
-        android:id="@+id/button_connect"
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentLeft="true"
-        android:text="@string/connect"/>
+        android:text="@string/hint"
+        android:layout_centerHorizontal="true"
+        android:singleLine="false"
+        android:textColor="@color/textcolor"
+        android:layout_above="@+id/layout_bottom_bar"
+        />
 
-    <Button
-        android:id="@+id/button_send"
-        android:layout_width="wrap_content"
+    <RelativeLayout
+        android:id="@id/layout_bottom_bar"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
-        android:text="@string/send"/>
+        android:background="@color/titlebackgroundcolor">
 
-
+        <Button
+            android:id="@+id/button_connect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/roundbutton"
+            android:layout_margin="7dp"
+            android:paddingLeft="50dp"
+            android:paddingRight="50dp"
+            android:layout_centerHorizontal="true"
+            android:textColor="@color/textcolorgold"
+            android:textSize="18sp"
+            android:text="@string/connect" />
+        <ProgressBar
+            android:id="@+id/progress_connect"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:visibility="invisible"/>
+    </RelativeLayout>
 
 
 </RelativeLayout>

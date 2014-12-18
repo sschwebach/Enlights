@@ -16,6 +16,7 @@ import android.content.ServiceConnection;
 import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -25,6 +26,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 import android.widget.ToggleButton;
@@ -54,11 +56,13 @@ public class LightActivity extends Activity {
     private byte[] data = new byte[3];
     private static final int REQUEST_ENABLE_BT = 1;
     private static final long SCAN_PERIOD = 2000;
+    private final int REFRESHTIME = 200;
 
     private LinearLayout buttonLayout;
     private LayoutInflater inflater;
     private Button connectButton;
-    private Button sendButton;
+    private Timer sendTimer;
+    private ProgressBar connectProgress;
 
     private ColorPicker picker;
     private SVBar svBar;
@@ -66,10 +70,31 @@ public class LightActivity extends Activity {
     private SaturationBar saturationBar;
     private ValueBar valueBar;
 
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName componentName,
+                                       IBinder service) {
+            mBluetoothLeService = ((RBLService.LocalBinder) service)
+                    .getService();
+            if (!mBluetoothLeService.initialize()) {
+                Log.e(TAG, "Unable to initialize Bluetooth");
+                finish();
+            }
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName componentName) {
+            mBluetoothLeService = null;
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_light);
+        this.setTitle("Control the Lights!");
+        connectProgress = (ProgressBar) findViewById(R.id.progress_connect);
         buttonLayout = (LinearLayout) findViewById(R.id.layout_buttons);
         inflater = (LayoutInflater.from(this));
         picker = (ColorPicker) findViewById(R.id.picker);
@@ -82,10 +107,18 @@ public class LightActivity extends Activity {
             @Override
             public void onColorChanged(int i) {
                 //change the color of all active buttons
-                for (int j = 0; j < 6; j++){
+                for (int j = 0; j < 6; j++) {
                     View currView = buttonLayout.getChildAt(j);
                     ToggleButton button = (ToggleButton) currView.findViewById(R.id.button_toggle);
-                    if (button.isChecked()){
+                    if (button.isChecked()) {
+                        long color = (long) picker.getColor();
+                        long redColor = color & 0x00FF0000;
+                        redColor = 0x00FF0000 - redColor;
+                        long blueColor = color & 0x000000FF;
+                        blueColor = 0x000000FF - blueColor;
+                        long greenColor = color & 0x0000FF00;
+                        greenColor = 0x0000FF00 - greenColor;
+                        button.setTextColor((int) (0xFF000000 + redColor + greenColor + blueColor));
                         button.setBackgroundColor(picker.getColor());
                     }
                 }
@@ -96,6 +129,8 @@ public class LightActivity extends Activity {
             @Override
             public void onClick(View v) {
                 if (scanFlag == false) {
+                    connectProgress.setVisibility(View.VISIBLE);
+                    connectButton.setVisibility(View.INVISIBLE);
                     scanLeDevice();
 
                     Timer mTimer = new Timer();
@@ -113,7 +148,7 @@ public class LightActivity extends Activity {
                                         Toast toast = Toast
                                                 .makeText(
                                                         LightActivity.this,
-                                                        "Couldn't search Ble Shiled device!",
+                                                        "No device found!",
                                                         Toast.LENGTH_SHORT);
                                         toast.setGravity(0, 0, Gravity.CENTER);
                                         toast.show();
@@ -128,37 +163,44 @@ public class LightActivity extends Activity {
                 if (connState == false) {
                     mBluetoothLeService.connect(mDeviceAddress);
                 } else {
+                    connectProgress.setVisibility(View.VISIBLE);
+                    connectButton.setVisibility(View.INVISIBLE);
                     mBluetoothLeService.disconnect();
                     mBluetoothLeService.close();
-                    sendButton.setEnabled(false);
+                    setButtonDisable();
                 }
             }
         });
-        sendButton = (Button) findViewById(R.id.button_send);
-        sendButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                //TODO get our data
-                byte[] buf = new byte[] { (byte) 0xA0, (byte) 0x00, (byte) 0x00 };
-                characteristicTx.setValue(buf);
-                mBluetoothLeService.writeCharacteristic(characteristicTx);
-            }
-        });
-        for (int i = 0; i < 6; i++){
+
+        for (int i = 0; i < 6; i++) {
             final View view = inflater.inflate(R.layout.button_light, null);
             final ToggleButton button = (ToggleButton) view.findViewById(R.id.button_toggle);
             final RelativeLayout borderView = (RelativeLayout) view.findViewById(R.id.button_background);
+            final int buttonNum = i + 1;
             view.setLayoutParams(new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1.0f));
             button.setBackgroundColor(picker.getColor());
+            button.setChecked(true);
+            button.setText("" + (i + 1));
+            button.setTextColor(0xFF000000);
+            button.setBackgroundColor(picker.getColor());
+            borderView.setBackgroundColor(0xFF000000);
             button.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Log.e("button", "click!");
                     if (button.isChecked()) {
-                        //((ColorDrawable) button.getBackground()).getColor();
+                        button.setText("" + (buttonNum));
+                        long color = (long) picker.getColor();
+                        long redColor = color & 0x00FF0000;
+                        redColor = 0x00FF0000 - redColor;
+                        long blueColor = color & 0x000000FF;
+                        blueColor = 0x000000FF - blueColor;
+                        long greenColor = color & 0x0000FF00;
+                        greenColor = 0x0000FF00 - greenColor;
+                        button.setTextColor((int) (0xFF000000 + redColor + greenColor + blueColor));
                         button.setBackgroundColor(picker.getColor());
                         borderView.setBackgroundColor(0xFF000000);
-                    }else{
+                    } else {
+                        button.setText("" + (buttonNum));
                         borderView.setBackgroundColor(0x00000000);
                     }
                 }
@@ -176,12 +218,50 @@ public class LightActivity extends Activity {
             return;
         }
 
-        Intent gattServiceIntent = new Intent(LightActivity.this,
+        Intent gattServiceIntent = new Intent(this,
                 RBLService.class);
-        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
+        if (!bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE))
+            Log.e("Connection", "Binding service failed!");
     }
 
-
+    private void TimerMethod(){
+        this.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
+                if (pm.isScreenOn()){
+                    if (connState){
+                        String sendString = "";
+                        for (int i = 0; i < 6; i++) {
+                            ToggleButton currButton = (ToggleButton) buttonLayout.getChildAt(i).findViewById(R.id.button_toggle);
+                            long color = ((ColorDrawable) currButton.getBackground()).getColor();
+                            long redColor = color & 0x00FF0000;
+                            redColor = redColor / 0x00010000;
+                            long blueColor = color & 0x000000FF;
+                            long greenColor = color & 0x0000FF00;
+                            greenColor = greenColor / 0x00000100;
+                            if (redColor > 255){
+                                redColor = 255;
+                            }
+                            if (greenColor > 255){
+                                greenColor = 255;
+                            }
+                            if (blueColor > 255){
+                                blueColor = 255;
+                            }
+                            //Log.e("Color", "color is " + redColor + " " + greenColor + " " + blueColor);
+                            sendString = (i + 1) + "|" + redColor + "|" + greenColor + "|" + blueColor + "^";
+                            byte[] buf = sendString.getBytes();
+                            if (characteristicTx != null) {
+                                characteristicTx.setValue(buf);
+                                mBluetoothLeService.writeCharacteristic(characteristicTx);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     private final BroadcastReceiver mGattUpdateReceiver = new BroadcastReceiver() {
         @Override
@@ -191,12 +271,13 @@ public class LightActivity extends Activity {
             if (RBLService.ACTION_GATT_DISCONNECTED.equals(action)) {
                 Toast.makeText(getApplicationContext(), "Disconnected",
                         Toast.LENGTH_SHORT).show();
-                //setButtonDisable();
+                setButtonDisable();
             } else if (RBLService.ACTION_GATT_SERVICES_DISCOVERED
                     .equals(action)) {
                 Toast.makeText(getApplicationContext(), "Connected",
                         Toast.LENGTH_SHORT).show();
-
+                connectButton.setVisibility(View.VISIBLE);
+                connectProgress.setVisibility(View.INVISIBLE);
                 getGattService(mBluetoothLeService.getSupportedGattService());
             } else if (RBLService.ACTION_DATA_AVAILABLE.equals(action)) {
                 data = intent.getByteArrayExtra(RBLService.EXTRA_DATA);
@@ -222,10 +303,6 @@ public class LightActivity extends Activity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -234,6 +311,13 @@ public class LightActivity extends Activity {
     @Override
     protected void onResume() {
         super.onResume();
+        this.sendTimer = new Timer();
+        this.sendTimer.schedule(new TimerTask(){
+            @Override
+            public void run(){
+                TimerMethod();
+            }
+        }, 0, REFRESHTIME);
 
         if (!mBluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(
@@ -249,9 +333,7 @@ public class LightActivity extends Activity {
         if (gattService == null)
             return;
 
-        //setButtonEnable();
-        //startReadRssi();
-
+        setButtonEnable();
         characteristicTx = gattService
                 .getCharacteristic(RBLService.UUID_BLE_SHIELD_TX);
 
@@ -301,10 +383,7 @@ public class LightActivity extends Activity {
                 @Override
                 public void run() {
                     if (device != null) {
-                        if (device.getName().contains("Shield")
-                                || device.getName().contains("Biscuit")) {
-                            mDevice = device;
-                        }
+                        mDevice = device;
                     }
                 }
             });
@@ -320,31 +399,23 @@ public class LightActivity extends Activity {
         unregisterReceiver(mGattUpdateReceiver);
     }
 
-    private final ServiceConnection mServiceConnection = new ServiceConnection() {
-
-        @Override
-        public void onServiceConnected(ComponentName componentName,
-                                       IBinder service) {
-            mBluetoothLeService = ((RBLService.LocalBinder) service)
-                    .getService();
-            if (!mBluetoothLeService.initialize()) {
-                Log.e(TAG, "Unable to initialize Bluetooth");
-                finish();
-            }
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            mBluetoothLeService = null;
-        }
-    };
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
 
         if (mServiceConnection != null)
-            unbindService(mServiceConnection);
+            try {
+                unbindService(mServiceConnection);
+            }catch(IllegalArgumentException e){
+                Log.e(TAG, "Receiver never registered");
+            }
+    }
+
+    @Override
+    protected void onPause(){
+        super.onPause();
+        this.sendTimer.cancel();
     }
 
     @Override
@@ -357,6 +428,20 @@ public class LightActivity extends Activity {
         }
 
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void setButtonEnable() {
+        flag = true;
+        connState = true;
+        connectButton.setText("Disconnect");
+    }
+
+    private void setButtonDisable() {
+        flag = false;
+        connState = false;
+        connectButton.setVisibility(View.VISIBLE);
+        connectProgress.setVisibility(View.INVISIBLE);
+        connectButton.setText("Connect");
     }
 
 }

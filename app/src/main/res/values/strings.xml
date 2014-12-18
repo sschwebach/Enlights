@@ -6,7 +6,9 @@
     <string name="connect">Connect</string>
     <string name="disconnect">Disconnect</string>
     <string name="send">Send!</string>
+    <string name="hint">You must be connected for changes to take effect.</string>
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="enlights_title">Enlights</string>
 
 </resources>
